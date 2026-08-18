@@ -195,16 +195,34 @@
       :close-on-click-modal="false"
       class="spec-editor-dialog"
     >
-      <div v-loading="specLoading" class="spec-editor-container">
-        <!-- TODO: 替换为 Monaco Editor，可通过 CDN 或 npm 包 monaco-editor 集成 -->
-        <el-input
-          v-model="specContent"
-          type="textarea"
-          :autosize="false"
-          class="spec-editor-textarea"
-          placeholder="加载中..."
-          spellcheck="false"
-        />
+      <div class="spec-editor-layout">
+        <div class="spec-editor-main">
+          <el-input
+            v-model="specContent"
+            type="textarea"
+            :autosize="false"
+            class="spec-editor-textarea"
+            placeholder="编写测试代码..."
+            spellcheck="false"
+          />
+        </div>
+        <div class="spec-editor-sidebar">
+          <h4>历史版本</h4>
+          <el-timeline>
+            <el-timeline-item
+              v-for="h in historyList"
+              :key="h.historyId"
+              :timestamp="parseTime(h.createTime)"
+              placement="top"
+            >
+              <div class="history-item">
+                <el-button link type="primary" size="small" @click="previewHistory(h)">v{{ h.version }}</el-button>
+                <el-button link type="warning" size="small" @click="handleRevert(h)">回退</el-button>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+          <el-empty v-if="historyList.length === 0" description="暂无历史" :image-size="40" />
+        </div>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -248,8 +266,8 @@
 
 <script setup name="E2eTestCase" lang="ts">
 import { addTask } from '@/api/e2e/task';
-import { addTestCase, delTestCase, getSpecContent, getTestCase, listTestCase, saveSpecContent, syncSpecFiles, updateTestCase } from '@/api/e2e/testcase';
-import type { E2eTestCaseForm, E2eTestCaseQuery, E2eTestCaseVO } from '@/api/e2e/testcase/types';
+import { addTestCase, delTestCase, getCaseHistory, getTestCase, listTestCase, revertCase, saveCaseContent, syncSpecFiles, updateTestCase } from '@/api/e2e/testcase';
+import type { E2eTestCaseForm, E2eTestCaseHistoryVo, E2eTestCaseQuery, E2eTestCaseVO } from '@/api/e2e/testcase/types';
 import { useLoading } from '@/hooks/async/useLoading';
 import { useFormDialog } from '@/hooks/dialog/useFormDialog';
 import { useSearchReset } from '@/hooks/form/useSearchReset';
@@ -316,9 +334,12 @@ const specDialog = reactive<DialogOption>({
   title: ''
 });
 const specContent = ref('');
-const specLoading = ref(false);
 const specSaving = ref(false);
 const currentSpecFile = ref('');
+const currentCaseId = ref<string | number>('');
+
+/** ========== 历史版本相关 ========== */
+const historyList = ref<E2eTestCaseHistoryVo[]>([]);
 
 /** ========== 单用例执行相关 ========== */
 const runDialog = reactive<DialogOption>({
@@ -409,35 +430,54 @@ const handleAiGenerate = () => {
   modal.msgWarning('AI生成功能开发中...');
 };
 
-/** 编辑Spec文件 */
+/** 编辑Spec文件 - 从DB读取内容 */
 const handleEditSpec = async (row: E2eTestCaseVO) => {
+  currentCaseId.value = row.caseId;
   currentSpecFile.value = row.specFile;
-  specDialog.title = `编辑 - ${row.caseName} (${row.specFile})`;
+  specDialog.title = `编辑 - ${row.caseName}`;
+  specContent.value = row.content || '// 用例内容为空，请编写测试代码';
   specDialog.visible = true;
-  specLoading.value = true;
-  specContent.value = '';
+  // 加载历史版本
   try {
-    const res = await getSpecContent(row.specFile);
-    specContent.value = res.data || '// 文件为空，请编写测试代码';
-  } catch (e: any) {
-    specContent.value = '// 加载失败: ' + (e?.message || '未知错误') + '\n// 文件路径: ' + row.specFile;
-  } finally {
-    specLoading.value = false;
+    const res = await getCaseHistory(row.caseId);
+    historyList.value = res.data || [];
+  } catch (e) {
+    historyList.value = [];
   }
 };
 
-/** 保存Spec文件 */
+/** 保存Spec内容到DB */
 const handleSaveSpec = async () => {
   specSaving.value = true;
   try {
-    await saveSpecContent({ specFile: currentSpecFile.value, content: specContent.value });
+    await saveCaseContent(currentCaseId.value, specContent.value);
     modal.msgSuccess('保存成功');
-    specDialog.visible = false;
+    await getList();
+    // 刷新历史版本
+    const res = await getCaseHistory(currentCaseId.value);
+    historyList.value = res.data || [];
   } catch (e) {
     modal.msgError('保存失败');
   } finally {
     specSaving.value = false;
   }
+};
+
+/** 预览历史版本内容 */
+const previewHistory = (h: E2eTestCaseHistoryVo) => {
+  specContent.value = h.content || '';
+};
+
+/** 回退到指定版本 */
+const handleRevert = async (h: E2eTestCaseHistoryVo) => {
+  await modal.confirm(`确认回退到版本 v${h.version}？`);
+  await revertCase(currentCaseId.value, h.historyId);
+  specContent.value = h.content || '';
+  modal.msgSuccess('回退成功');
+  // 重新加载历史版本
+  const res = await getCaseHistory(currentCaseId.value);
+  historyList.value = res.data || [];
+  await getList();
 };
 
 /** 执行单个用例 */
@@ -482,8 +522,33 @@ onMounted(() => {
 }
 
 .spec-editor-dialog {
-  .spec-editor-container {
+  .spec-editor-layout {
+    display: flex;
     height: calc(100vh - 150px);
+    gap: 16px;
+  }
+
+  .spec-editor-main {
+    flex: 1;
+  }
+
+  .spec-editor-sidebar {
+    width: 240px;
+    border-left: 1px solid var(--el-border-color-lighter);
+    padding-left: 16px;
+    overflow-y: auto;
+
+    h4 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      color: var(--el-text-color-primary);
+    }
+
+    .history-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
   }
 
   .spec-editor-textarea {
