@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-const url = ref('https://plus-doc.dromara.org/');
+const url = ref('https://playwright.dev');
 
 function goto() {
   window.open(url.value);

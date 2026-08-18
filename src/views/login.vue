@@ -3,11 +3,11 @@
     <div class="login-shell">
       <section class="login-brand">
         <span class="brand-pill">Plus UI Workspace</span>
-        <h1 class="brand-title">企业级后台管理系统</h1>
+        <h1 class="brand-title">E2E 自动化测试平台</h1>
         <p class="brand-desc">
-          真正面向企业级的应用框架 组件化 模块化 轻耦合 高扩展 针对企业痛点 业界一流技术栈
+          E2E 自动化测试可视化管理平台
           <br />
-          重写 RuoYi-Vue 所有功能 集成 Sa-Token、Mybatis-Plus、WarmFlow、SpringDoc、Hutool、OSS 定期同步。
+          支持 Playwright 测试用例管理、任务调度、报告查看和产物管理。
         </p>
         <div class="brand-highlights">
           <span v-for="item in highlights" :key="item" class="highlight-chip">{{ item }}</span>
@@ -77,26 +77,26 @@
           </router-link>
         </div>
 
-        <div class="social-panel">
-          <span class="social-label">第三方登录</span>
-          <div class="social-actions">
-            <el-button circle :title="$t('login.social.wechat')" @click="doSocialLogin('wechat')">
-              <svg-icon icon-class="wechat" />
-            </el-button>
-            <el-button circle :title="$t('login.social.maxkey')" @click="doSocialLogin('maxkey')">
-              <svg-icon icon-class="maxkey" />
-            </el-button>
-            <el-button circle :title="$t('login.social.topiam')" @click="doSocialLogin('topiam')">
-              <svg-icon icon-class="topiam" />
-            </el-button>
-            <el-button circle :title="$t('login.social.gitee')" @click="doSocialLogin('gitee')">
-              <svg-icon icon-class="gitee" />
-            </el-button>
-            <el-button circle :title="$t('login.social.github')" @click="doSocialLogin('github')">
-              <svg-icon icon-class="github" />
-            </el-button>
-          </div>
-        </div>
+<!--        <div class="social-panel">-->
+<!--          <span class="social-label">第三方登录</span>-->
+<!--          <div class="social-actions">-->
+<!--            <el-button circle :title="$t('login.social.wechat')" @click="doSocialLogin('wechat')">-->
+<!--              <svg-icon icon-class="wechat" />-->
+<!--            </el-button>-->
+<!--            <el-button circle :title="$t('login.social.maxkey')" @click="doSocialLogin('maxkey')">-->
+<!--              <svg-icon icon-class="maxkey" />-->
+<!--            </el-button>-->
+<!--            <el-button circle :title="$t('login.social.topiam')" @click="doSocialLogin('topiam')">-->
+<!--              <svg-icon icon-class="topiam" />-->
+<!--            </el-button>-->
+<!--            <el-button circle :title="$t('login.social.gitee')" @click="doSocialLogin('gitee')">-->
+<!--              <svg-icon icon-class="gitee" />-->
+<!--            </el-button>-->
+<!--            <el-button circle :title="$t('login.social.github')" @click="doSocialLogin('github')">-->
+<!--              <svg-icon icon-class="github" />-->
+<!--            </el-button>-->
+<!--          </div>-->
+<!--        </div>-->
 
         <el-form-item class="submit-row">
           <el-button :loading="loading" size="large" type="primary" class="submit-button" @click.prevent="handleLogin">
@@ -108,7 +108,7 @@
     </div>
 
     <div class="el-login-footer">
-      <span>Copyright © 2018-{{ currentYear }} 疯狂的狮子Li All Rights Reserved.</span>
+      <span>Copyright © 2024-{{ currentYear }} AutoTest Platform</span>
     </div>
   </div>
 </template>
@@ -125,11 +125,11 @@ import { useUserStore } from '@/store/modules/user';
 const title = import.meta.env.VITE_APP_TITLE;
 const currentYear = new Date().getFullYear();
 const quickStats = [
-  { label: '细粒度权限管理', value: '动态权限控制' },
-  { label: '主流技术栈', value: '全栈技术集成' },
-  { label: 'UI样式', value: '卡片式' }
+  { label: '测试用例管理', value: 'Playwright' },
+  { label: '自动化执行', value: '一键运行' },
+  { label: '报告分析', value: '可视化' }
 ];
-const highlights = ['技术栈全面升级', '动态菜单', '多主题布局', '深浅色主题'];
+const highlights = ['E2E测试管理', '多浏览器支持', '实时日志', '测试报告'];
 const userStore = useUserStore();
 const router = useRouter();
 const { t } = useI18n();

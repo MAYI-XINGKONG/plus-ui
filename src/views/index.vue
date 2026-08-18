@@ -2,16 +2,13 @@
   <div class="home">
     <section class="hero-panel">
       <div class="hero-copy">
-        <h1>RuoYi-Vue-Plus 控制台</h1>
+        <h1>E2E 自动化测试管理平台</h1>
         <p>
-          企业级后台管理系统 重写 RuoYi-Vue 所有功能 集成 Sa-Token、Mybatis-Plus、WarmFlow、SpringDoc、Hutool、OSS
-          等组件
+          基于 Playwright 的 E2E 自动化测试管理平台，支持测试用例管理、任务调度执行、测试报告查看和产物管理。
         </p>
         <div class="hero-actions">
-          <el-button type="primary" @click="goTarget('https://gitee.com/dromara/RuoYi-Vue-Plus')">查看源码</el-button>
-          <el-button plain @click="goTarget('https://plus-doc.dromara.org/#/ruoyi-vue-plus/changlog')">
-            更新日志
-          </el-button>
+          <el-button type="primary" @click="$router.push('/e2e/testcase')">测试用例</el-button>
+          <el-button plain @click="$router.push('/e2e/task')">测试任务</el-button>
         </div>
       </div>
     </section>
@@ -67,39 +64,49 @@
 <script setup name="Index" lang="ts">
 const products = [
   {
-    name: 'RuoYi-Vue-Plus',
-    version: 'v6.0.0',
-    summary: '面向分布式集群场景的后台管理系统，保持现有业务接口与权限逻辑，适合先完成前端壳升级。',
-    tags: ['Vue 3', 'Element Plus', 'Spring Boot', 'Sa-Token'],
-    primaryLabel: '访问 GitHub',
-    primaryUrl: 'https://github.com/dromara/RuoYi-Vue-Plus',
-    secondaryLabel: '查看更新日志',
-    secondaryUrl: 'https://plus-doc.dromara.org/#/ruoyi-vue-plus/changlog'
+    name: '测试用例管理',
+    version: 'v1.0.0',
+    summary: '管理 Playwright 测试用例，支持自动同步 spec 文件、在线编辑和分组管理。',
+    tags: ['Playwright', 'TypeScript', 'Spec文件', '用例分组'],
+    primaryLabel: '进入管理',
+    primaryUrl: '/e2e/testcase',
+    secondaryLabel: '查看文档',
+    secondaryUrl: '#'
   },
   {
-    name: 'RuoYi-Cloud-Plus',
-    version: 'v6.0.0',
-    summary: '微服务通用权限管理系统，适合更复杂的服务治理场景，也可以沿用同样的前端升级思路。',
-    tags: ['Spring Cloud', 'Gateway', 'Nacos', 'Dubbo'],
-    primaryLabel: '访问 GitHub',
-    primaryUrl: 'https://github.com/dromara/RuoYi-Cloud-Plus',
-    secondaryLabel: '查看更新日志',
-    secondaryUrl: 'https://plus-doc.dromara.org/#/ruoyi-cloud-plus/changlog'
+    name: '测试任务调度',
+    version: 'v1.0.0',
+    summary: '一键执行测试任务，支持多浏览器、有头/无头模式，实时查看执行日志。',
+    tags: ['多浏览器', '有头模式', '实时日志', 'SSE推送'],
+    primaryLabel: '进入管理',
+    primaryUrl: '/e2e/task',
+    secondaryLabel: '查看文档',
+    secondaryUrl: '#'
+  },
+  {
+    name: '测试报告分析',
+    version: 'v1.0.0',
+    summary: '查看测试报告详情，包括通过率、截图、视频回放和 Trace 文件。',
+    tags: ['HTML报告', '截图预览', '视频回放', 'Trace分析'],
+    primaryLabel: '查看报告',
+    primaryUrl: '/e2e/report',
+    secondaryLabel: '查看文档',
+    secondaryUrl: '#'
   }
 ];
 
 const capabilityGroups = [
   {
-    title: '后端基建',
-    items: ['Spring Boot / Spring Cloud', 'Sa-Token 认证与权限', 'MySQL / Redis', '代码生成器']
+    title: '测试管理',
+    items: ['Playwright 用例管理', 'Spec 文件自动同步', '在线编辑测试代码', '用例分组与搜索']
   },
   {
-    title: '平台能力',
-    items: ['动态菜单与按钮权限', '监控、日志、在线用户', '任务调度与工作流', '文件存储与多云适配']
+    title: '任务执行',
+    items: ['一键执行测试任务', '多浏览器支持', '实时日志推送 (SSE)', '任务停止与重跑']
   },
   {
-    title: '前端方向',
-    items: ['UI 卡片化', '主题与布局统一', '通用页面容器规范化', '企业化布局']
+    title: '报告与产物',
+    items: ['HTML 测试报告', '截图与视频回放', 'Trace 文件分析', '通过率统计']
   }
 ];
 
