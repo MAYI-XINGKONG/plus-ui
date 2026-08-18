@@ -2,16 +2,27 @@
   <div class="home">
     <section class="hero-panel">
       <div class="hero-copy">
-        <h1>RuoYi-Vue-Plus 控制台</h1>
+        <h1>自动化测试中心</h1>
         <p>
-          企业级后台管理系统 重写 RuoYi-Vue 所有功能 集成 Sa-Token、Mybatis-Plus、WarmFlow、SpringDoc、Hutool、OSS
-          等组件
+          集成接口测试、E2E 测试、AI 辅助用例生成于一体，支持多浏览器并行执行，实时查看测试报告与通过率统计。
         </p>
         <div class="hero-actions">
-          <el-button type="primary" @click="goTarget('https://gitee.com/dromara/RuoYi-Vue-Plus')">查看源码</el-button>
-          <el-button plain @click="goTarget('https://plus-doc.dromara.org/#/ruoyi-vue-plus/changlog')">
-            更新日志
-          </el-button>
+          <el-button type="primary" icon="VideoPlay" @click="goPage('/autotest/execution')">执行测试</el-button>
+          <el-button plain icon="List" @click="goPage('/autotest/suite')">用例管理</el-button>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <strong>{{ stats.suiteCount }}</strong>
+          <span>测试用例</span>
+        </div>
+        <div class="stat-card">
+          <strong>{{ stats.executionCount }}</strong>
+          <span>执行次数</span>
+        </div>
+        <div class="stat-card">
+          <strong :style="{ color: stats.passRate >= 80 ? '#67c23a' : '#f56c6c' }">{{ stats.passRate }}%</strong>
+          <span>通过率</span>
         </div>
       </div>
     </section>
@@ -20,92 +31,109 @@
       <section class="section-card">
         <div class="section-head">
           <div>
-            <h2>项目矩阵</h2>
+            <span class="section-kicker">Quick Access</span>
+            <h2>功能入口</h2>
           </div>
         </div>
-        <div class="product-list">
-          <article v-for="product in products" :key="product.name" class="product-card">
-            <div class="product-top">
-              <div>
-                <h3>{{ product.name }}</h3>
-                <p>{{ product.summary }}</p>
-              </div>
-              <span class="product-version">{{ product.version }}</span>
+        <div class="quick-grid">
+          <article v-for="item in quickLinks" :key="item.title" class="quick-card" @click="goPage(item.path)">
+            <div class="quick-icon" :style="{ background: item.bg }">
+              <el-icon :size="24"><component :is="item.icon" /></el-icon>
             </div>
-            <div class="product-tags">
-              <el-tag v-for="tag in product.tags" :key="tag" effect="plain">{{ tag }}</el-tag>
-            </div>
-            <div class="product-actions">
-              <el-button type="primary" plain @click="goTarget(product.primaryUrl)">
-                {{ product.primaryLabel }}
-              </el-button>
-              <el-button plain @click="goTarget(product.secondaryUrl)">{{ product.secondaryLabel }}</el-button>
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.desc }}</p>
             </div>
           </article>
         </div>
       </section>
 
-      <section class="section-card capability-card">
+      <section class="section-card">
         <div class="section-head">
           <div>
-            <h2>能力地图</h2>
+            <span class="section-kicker">Recent Runs</span>
+            <h2>最近执行</h2>
+          </div>
+          <el-button link type="primary" @click="goPage('/autotest/report')">查看全部</el-button>
+        </div>
+        <div v-if="recentExecutions.length" class="recent-list">
+          <div v-for="item in recentExecutions" :key="item.executionId" class="recent-item">
+            <el-tag :type="getStatusType(item.status)" size="small" effect="dark">{{ getStatusLabel(item.status) }}</el-tag>
+            <span class="recent-name">{{ item.suiteName || '全部用例' }}</span>
+            <span class="recent-time">{{ item.browser }} · {{ formatDuration(item.duration) }}</span>
           </div>
         </div>
-        <div class="capability-groups">
-          <article v-for="group in capabilityGroups" :key="group.title" class="capability-group">
-            <h3>{{ group.title }}</h3>
-            <ul>
-              <li v-for="item in group.items" :key="item">{{ item }}</li>
-            </ul>
-          </article>
-        </div>
+        <el-empty v-else description="暂无执行记录" :image-size="80" />
       </section>
     </div>
   </div>
 </template>
 
 <script setup name="Index" lang="ts">
-const products = [
-  {
-    name: 'RuoYi-Vue-Plus',
-    version: 'v6.0.0',
-    summary: '面向分布式集群场景的后台管理系统，保持现有业务接口与权限逻辑，适合先完成前端壳升级。',
-    tags: ['Vue 3', 'Element Plus', 'Spring Boot', 'Sa-Token'],
-    primaryLabel: '访问 GitHub',
-    primaryUrl: 'https://github.com/dromara/RuoYi-Vue-Plus',
-    secondaryLabel: '查看更新日志',
-    secondaryUrl: 'https://plus-doc.dromara.org/#/ruoyi-vue-plus/changlog'
-  },
-  {
-    name: 'RuoYi-Cloud-Plus',
-    version: 'v6.0.0',
-    summary: '微服务通用权限管理系统，适合更复杂的服务治理场景，也可以沿用同样的前端升级思路。',
-    tags: ['Spring Cloud', 'Gateway', 'Nacos', 'Dubbo'],
-    primaryLabel: '访问 GitHub',
-    primaryUrl: 'https://github.com/dromara/RuoYi-Cloud-Plus',
-    secondaryLabel: '查看更新日志',
-    secondaryUrl: 'https://plus-doc.dromara.org/#/ruoyi-cloud-plus/changlog'
-  }
+import { listSuite } from '@/api/test/suite';
+import { listExecution } from '@/api/test/execution';
+
+const router = useRouter();
+
+const stats = reactive({
+  suiteCount: 0,
+  executionCount: 0,
+  passRate: 0
+});
+
+const recentExecutions = ref<any[]>([]);
+
+const quickLinks = [
+  { title: '测试用例', desc: '管理接口测试与 E2E 用例', path: '/autotest/suite', icon: 'List', bg: 'rgba(64,158,255,0.12)' },
+  { title: '测试执行', desc: '选择用例或批量执行测试', path: '/autotest/execution', icon: 'VideoPlay', bg: 'rgba(103,194,58,0.12)' },
+  { title: '测试报告', desc: '查看历史报告与通过率趋势', path: '/autotest/report', icon: 'DataAnalysis', bg: 'rgba(230,162,60,0.12)' },
+  { title: '接口文档', desc: 'Swagger UI 查看后端 API', path: '__swagger', icon: 'Document', bg: 'rgba(144,147,153,0.12)' }
 ];
 
-const capabilityGroups = [
-  {
-    title: '后端基建',
-    items: ['Spring Boot / Spring Cloud', 'Sa-Token 认证与权限', 'MySQL / Redis', '代码生成器']
-  },
-  {
-    title: '平台能力',
-    items: ['动态菜单与按钮权限', '监控、日志、在线用户', '任务调度与工作流', '文件存储与多云适配']
-  },
-  {
-    title: '前端方向',
-    items: ['UI 卡片化', '主题与布局统一', '通用页面容器规范化', '企业化布局']
-  }
-];
-
-const goTarget = (url: string) => {
-  window.open(url, '__blank');
+const getStatusType = (status: string) => {
+  const map: Record<string, 'success' | 'warning' | 'info' | 'danger'> = {
+    pass: 'success', fail: 'danger', running: 'warning', pending: 'info', error: 'danger'
+  };
+  return map[status] || 'info';
 };
+
+const getStatusLabel = (status: string) => {
+  const map: Record<string, string> = { pass: '通过', fail: '失败', running: '执行中', pending: '待执行', error: '错误' };
+  return map[status] || status;
+};
+
+const formatDuration = (ms: number) => {
+  if (!ms) return '-';
+  if (ms < 1000) return ms + 'ms';
+  return (ms / 1000).toFixed(1) + 's';
+};
+
+const goPage = (path: string) => {
+  if (path === '__swagger') {
+    window.open('/swagger-ui/index.html', '_blank');
+  } else {
+    router.push(path);
+  }
+};
+
+onMounted(async () => {
+  try {
+    const [suiteRes, execRes] = await Promise.all([
+      listSuite({ pageNum: 1, pageSize: 1 }),
+      listExecution({ pageNum: 1, pageSize: 5 })
+    ]);
+    stats.suiteCount = suiteRes.data?.total || 0;
+    stats.executionCount = execRes.data?.total || 0;
+    const rows = execRes.data?.rows || [];
+    recentExecutions.value = rows;
+    if (rows.length > 0) {
+      const passed = rows.filter((r: any) => r.status === 'pass').length;
+      stats.passRate = Math.round((passed / rows.length) * 100);
+    }
+  } catch {
+    // 接口未就绪时静默处理
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -154,19 +182,6 @@ const goTarget = (url: string) => {
   }
 }
 
-.hero-badge {
-  display: inline-flex;
-  width: fit-content;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(53, 109, 255, 0.12);
-  color: var(--app-accent-strong);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -190,7 +205,7 @@ const goTarget = (url: string) => {
 
   strong {
     color: var(--app-text-title);
-    font-size: 24px;
+    font-size: 28px;
     letter-spacing: -0.03em;
   }
 
@@ -219,7 +234,7 @@ const goTarget = (url: string) => {
   h2 {
     margin: 6px 0 0;
     color: var(--app-text-title);
-    font-size: 26px;
+    font-size: 22px;
     letter-spacing: -0.03em;
   }
 }
@@ -232,120 +247,88 @@ const goTarget = (url: string) => {
   text-transform: uppercase;
 }
 
-.product-list,
-.capability-groups {
+.quick-grid {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 }
 
-.product-card {
-  padding: 22px;
-  border-radius: 24px;
+.quick-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
   background: var(--app-elevated-soft-bg);
   border: 1px solid var(--app-surface-border);
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: var(--app-shadow-sm);
-    border-color: rgba(53, 109, 255, 0.2);
+    border-color: rgba(53, 109, 255, 0.3);
   }
-}
-
-.product-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
 
   h3 {
-    margin: 0 0 8px;
+    margin: 0 0 4px;
+    font-size: 15px;
     color: var(--app-text-title);
-    font-size: 22px;
-    letter-spacing: -0.03em;
   }
 
   p {
     margin: 0;
+    font-size: 12px;
     color: var(--app-text-muted);
-    line-height: 1.8;
   }
 }
 
-.product-version {
+.quick-icon {
   flex-shrink: 0;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(53, 109, 255, 0.12);
-  color: var(--app-accent-strong);
-  font-size: 12px;
-  font-weight: 700;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.product-tags {
+.recent-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.product-actions {
-  display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
-  margin-top: 18px;
 }
 
-.capability-card {
-  background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%), var(--app-surface-bg);
-}
-
-.capability-group {
-  padding: 18px 18px 18px 20px;
-  border-radius: 22px;
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: var(--app-elevated-soft-bg);
   border: 1px solid var(--app-surface-border);
+}
 
-  h3 {
-    margin: 0 0 12px;
-    color: var(--app-text-title);
-    font-size: 18px;
-  }
+.recent-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--app-text-title);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 10px;
-  }
-
-  li {
-    position: relative;
-    padding-left: 16px;
-    color: var(--app-text-muted);
-    line-height: 1.7;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 10px;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--app-accent-strong);
-      box-shadow: 0 0 0 5px rgba(53, 109, 255, 0.12);
-    }
-  }
+.recent-time {
+  font-size: 12px;
+  color: var(--app-text-muted);
 }
 
 @media (max-width: 960px) {
   .hero-panel,
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -355,16 +338,6 @@ const goTarget = (url: string) => {
   .section-card {
     padding: 20px;
     border-radius: 22px;
-  }
-
-  .product-top {
-    flex-direction: column;
-  }
-}
-
-html.dark {
-  .hero-panel {
-    background: radial-gradient(circle at top left, rgba(53, 109, 255, 0.18), transparent 30%), var(--app-surface-bg);
   }
 }
 </style>

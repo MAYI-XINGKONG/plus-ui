@@ -86,6 +86,7 @@ export const usePermissionStore = defineStore('permission', () => {
     type = false
   ): RouteRecordRaw[] => {
     return asyncRouterMap.filter(route => {
+      if (!route) return false;
       if (type && route.children) {
         route.children = filterChildren(route.children, undefined);
       }
@@ -97,7 +98,12 @@ export const usePermissionStore = defineStore('permission', () => {
       } else if (route.component?.toString() === 'InnerLink') {
         route.component = InnerLink;
       } else {
-        route.component = loadView(route.component, route.name as string);
+        const component = loadView(route.component, route.name as string);
+        if (!component && !route.children?.length) {
+          return false;
+        }
+        // 有子路由但组件加载失败，使用 ParentView 作为兜底
+        route.component = component || ParentView;
       }
       if (route.children != null && route.children && route.children.length) {
         route.children = filterAsyncRouter(route.children, route, type);
@@ -111,7 +117,9 @@ export const usePermissionStore = defineStore('permission', () => {
   const filterChildren = (childrenMap: RouteRecordRaw[], lastRouter?: RouteRecordRaw): RouteRecordRaw[] => {
     let children: RouteRecordRaw[] = [];
     childrenMap.forEach(el => {
-      el.path = lastRouter ? lastRouter.path + '/' + el.path : el.path;
+      if (lastRouter) {
+        el.path = el.path ? lastRouter.path + '/' + el.path : lastRouter.path;
+      }
       if (el.children && el.children.length && el.component?.toString() === 'ParentView') {
         children = children.concat(filterChildren(el.children, el));
       } else {

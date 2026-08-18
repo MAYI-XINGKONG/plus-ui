@@ -43,10 +43,17 @@ router.beforeEach(async (to, from) => {
         } else {
           isRelogin.show = false;
           const accessRoutes = await usePermissionStore().generateRoutes();
+          console.log('[Router] 生成的路由数量:', accessRoutes.length);
+          console.log('[Router] 路由列表:', accessRoutes.map(r => ({ name: r.name, path: r.path, children: r.children?.length })));
           // 根据roles权限生成可访问的路由表
           accessRoutes.forEach(route => {
             if (!isHttp(route.path)) {
-              router.addRoute(route); // 动态添加可访问路由表
+              try {
+                router.addRoute(route);
+              } catch (e) {
+                console.error('[addRoute] 路由添加失败:', route.name, route.path, e);
+                console.error('[addRoute] 路由详情:', JSON.stringify(route, (key, val) => typeof val === 'function' ? '[Function]' : val, 2));
+              }
             }
           });
           // hack方法 确保addRoutes已完成

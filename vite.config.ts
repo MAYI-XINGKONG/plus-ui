@@ -34,6 +34,14 @@ export default defineConfig(({ mode, command }) => {
           changeOrigin: true,
           ws: true,
           rewrite: path => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), '')
+        },
+        '/swagger-ui': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
+        },
+        '/v3/api-docs': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
         }
       }
     },
