@@ -5,7 +5,7 @@
         <span class="brand-pill">Plus UI Workspace</span>
         <h1 class="brand-title">E2E 自动化测试平台</h1>
         <p class="brand-desc">
-          E2E 自动化测试可视化管理平台
+          E2E 自动化测试管理平台
           <br />
           支持 Playwright 测试用例管理、任务调度、报告查看和产物管理。
         </p>
