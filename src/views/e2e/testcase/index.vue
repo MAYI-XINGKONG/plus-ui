@@ -50,12 +50,12 @@
             <el-button v-hasPermi="['e2e:case:add']" type="primary" plain icon="Plus" @click="handleAdd">
               新增
             </el-button>
-            <el-button v-hasPermi="['e2e:case:sync']" type="success" plain icon="Refresh" @click="handleSync">
-              同步
-            </el-button>
-            <el-button v-hasPermi="['e2e:case:edit']" type="info" plain icon="MagicStick" @click="handleAiGenerate">
-              AI生成
-            </el-button>
+<!--            <el-button v-hasPermi="['e2e:case:sync']" type="success" plain icon="Refresh" @click="handleSync">-->
+<!--              同步-->
+<!--            </el-button>-->
+<!--            <el-button v-hasPermi="['e2e:case:edit']" type="info" plain icon="MagicStick" @click="handleAiGenerate">-->
+<!--              AI生成-->
+<!--            </el-button>-->
             <el-button
               v-hasPermi="['e2e:case:remove']"
               type="danger"
@@ -71,82 +71,68 @@
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        border
-        class="data-table"
-        :data="testCaseList"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column v-if="false" label="用例编号" align="center" prop="caseId" />
-        <el-table-column label="用例名称" align="center" prop="caseName" show-overflow-tooltip />
-        <el-table-column label="Spec文件" align="center" prop="specFile" show-overflow-tooltip>
-          <template #default="scope">
-            <el-tooltip :content="scope.row.specFile" placement="top">
-              <span class="spec-file-path">{{ scope.row.specFile }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="用例分组" align="center" prop="caseGroup">
-          <template #default="scope">
-            <el-tag v-if="scope.row.caseGroup" effect="plain">{{ scope.row.caseGroup }}</el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" align="center" prop="status">
-          <template #default="scope">
-            <el-tag v-if="scope.row.status === '0'" type="success">正常</el-tag>
-            <el-tag v-else-if="scope.row.status === '1'" type="danger">停用</el-tag>
-            <el-tag v-else type="info">{{ scope.row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-          <template #default="scope">
-            <span>{{ parseTime(scope.row.createTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" align="center" class-name="small-padding fixed-width">
-          <template #default="scope">
-            <el-tooltip content="编辑Spec" placement="top">
-              <el-button
-                v-hasPermi="['e2e:case:edit']"
-                link
-                type="primary"
-                icon="Edit"
-                @click="handleEditSpec(scope.row)"
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="编辑" placement="top">
-              <el-button
-                v-hasPermi="['e2e:case:edit']"
-                link
-                type="primary"
-                icon="Document"
-                @click="handleUpdate(scope.row)"
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="执行" placement="top">
-              <el-button
-                v-hasPermi="['e2e:task:add']"
-                link
-                type="success"
-                icon="VideoPlay"
-                @click="handleRunCase(scope.row)"
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="删除" placement="top">
-              <el-button
-                v-hasPermi="['e2e:case:remove']"
-                link
-                type="primary"
-                icon="Delete"
-                @click="handleDelete(scope.row)"
-              ></el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- 分组视图 -->
+      <div v-loading="loading" class="grouped-cases">
+        <el-collapse v-model="expandedGroups">
+          <el-collapse-item
+            v-for="group in groupedCases"
+            :key="group.name"
+            :name="group.name"
+          >
+            <template #title>
+              <div class="group-header">
+                <span class="group-name">
+                  <el-tag effect="dark" size="small" class="group-tag">{{ group.name || '未分组' }}</el-tag>
+                  {{ group.name || '未分组' }}
+                </span>
+                <span class="group-count">{{ group.cases.length }} 条用例</span>
+                <el-button
+                  v-hasPermi="['e2e:task:execute']"
+                  type="primary"
+                  size="small"
+                  icon="VideoPlay"
+                  class="group-run-btn"
+                  @click.stop="handleRunGroup(group)"
+                >
+                  执行分组
+                </el-button>
+              </div>
+            </template>
+            <el-table :data="group.cases" border size="small" class="group-case-table">
+              <el-table-column label="用例名称" prop="caseName" min-width="200" />
+              <el-table-column label="Spec文件" prop="specFile" min-width="250" show-overflow-tooltip />
+              <el-table-column label="状态" align="center" width="80">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.status === '0'" type="success" size="small">正常</el-tag>
+                  <el-tag v-else type="info" size="small">停用</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="更新时间" align="center" width="170">
+                <template #default="scope">
+                  {{ parseTime(scope.row.updateTime) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+                <template #default="scope">
+                  <el-tooltip content="编辑" placement="top">
+                    <el-button v-hasPermi="['e2e:testcase:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" />
+                  </el-tooltip>
+                  <el-tooltip content="编辑代码" placement="top">
+                    <el-button v-hasPermi="['e2e:testcase:edit']" link type="primary" icon="Document" @click="handleEditSpec(scope.row)" />
+                  </el-tooltip>
+                  <el-tooltip content="执行" placement="top">
+                    <el-button v-hasPermi="['e2e:task:execute']" link type="success" icon="VideoPlay" @click="handleRunCase(scope.row)" />
+                  </el-tooltip>
+                  <el-tooltip content="删除" placement="top">
+                    <el-button v-hasPermi="['e2e:testcase:remove']" link type="primary" icon="Delete" @click="handleDelete(scope.row)" />
+                  </el-tooltip>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-collapse-item>
+        </el-collapse>
+        <el-empty v-if="!loading && groupedCases.length === 0" description="暂无测试用例" />
+      </div>
 
       <pagination
         v-show="total > 0"
@@ -265,7 +251,7 @@
 </template>
 
 <script setup name="E2eTestCase" lang="ts">
-import { addTask } from '@/api/e2e/task';
+import { addTask, executeGroupTask } from '@/api/e2e/task';
 import { addTestCase, delTestCase, getCaseHistory, getTestCase, listTestCase, revertCase, saveCaseContent, syncSpecFiles, updateTestCase } from '@/api/e2e/testcase';
 import type { E2eTestCaseForm, E2eTestCaseHistoryVo, E2eTestCaseQuery, E2eTestCaseVO } from '@/api/e2e/testcase/types';
 import { useLoading } from '@/hooks/async/useLoading';
@@ -489,6 +475,27 @@ const handleRunCase = (row: E2eTestCaseVO) => {
   runDialog.visible = true;
 };
 
+/** ========== 分组视图相关 ========== */
+const expandedGroups = ref<string[]>([]);
+
+const groupedCases = computed(() => {
+  const map = new Map<string, E2eTestCaseVO[]>();
+  for (const c of testCaseList.value) {
+    const group = c.caseGroup || '未分组';
+    if (!map.has(group)) map.set(group, []);
+    map.get(group)!.push(c);
+  }
+  return Array.from(map.entries()).map(([name, cases]) => ({ name, cases }));
+});
+
+/** 执行整个分组 */
+const handleRunGroup = async (group: { name: string; cases: E2eTestCaseVO[] }) => {
+  await modal.confirm(`确认执行分组 "${group.name}" 下的 ${group.cases.length} 条用例？`);
+  const taskName = `分组执行-${group.name}-${new Date().toLocaleString()}`;
+  await executeGroupTask(group.name, taskName);
+  modal.msgSuccess('任务已创建，正在执行');
+};
+
 /** 提交执行 */
 const submitRunCase = () => {
   runFormRef.value?.validate(async (valid: boolean) => {
@@ -519,6 +526,34 @@ onMounted(() => {
     cursor: pointer;
     word-break: break-all;
   }
+}
+
+.grouped-cases {
+  margin-top: 8px;
+}
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-right: 16px;
+}
+.group-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.group-tag {
+  margin-right: 6px;
+}
+.group-count {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+.group-run-btn {
+  margin-left: auto;
+}
+.group-case-table {
+  margin: 8px 0;
 }
 
 .spec-editor-dialog {

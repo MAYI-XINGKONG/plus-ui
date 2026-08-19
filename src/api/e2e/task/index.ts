@@ -52,3 +52,12 @@ export function getTaskLogs(taskId: string | number): AxiosPromise<string[]> {
     method: 'get'
   });
 }
+
+/** 执行分组下所有用例 */
+export function executeGroupTask(group: string, taskName: string, browser: string = 'chromium', headed: string = '1') {
+  return request({
+    url: '/e2e/task/executeGroup',
+    method: 'post',
+    params: { group, taskName, browser, headed }
+  });
+}
