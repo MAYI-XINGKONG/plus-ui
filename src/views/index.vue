@@ -86,8 +86,8 @@ const products = [
   {
     name: '测试报告分析',
     version: 'v1.0.0',
-    summary: '查看测试报告详情，包括通过率、截图、视频回放和 Trace 文件。',
-    tags: ['HTML报告', '截图预览', '视频回放', 'Trace分析'],
+    summary: '查看测试报告详情，包括通过率、截图和 Trace 文件。',
+    tags: ['HTML报告', '截图预览', 'Trace分析'],
     primaryLabel: '查看报告',
     primaryUrl: '/e2e/report',
     secondaryLabel: '查看文档',
@@ -98,15 +98,15 @@ const products = [
 const capabilityGroups = [
   {
     title: '测试管理',
-    items: ['Playwright 用例管理', 'Spec 文件自动同步', '在线编辑测试代码', '用例分组与搜索']
+    items: ['Playwright 用例管理', '在线编辑测试代码', '用例分组与搜索']
   },
   {
     title: '任务执行',
-    items: ['一键执行测试任务', '多浏览器支持', '实时日志推送 (SSE)', '任务停止与重跑']
+    items: ['一键执行测试任务', '多浏览器支持', '实时日志推送 (SSE)']
   },
   {
     title: '报告与产物',
-    items: ['HTML 测试报告', '截图与视频回放', 'Trace 文件分析', '通过率统计']
+    items: ['HTML 测试报告', '截图', 'Trace 文件分析', '通过率统计']
   }
 ];
 
